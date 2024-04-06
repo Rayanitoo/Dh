@@ -1,0 +1,84 @@
+-- URL del script remoto
+local scriptURL = "https://raw.githubusercontent.com/TU_USUARIO/TU_REPOSITORIO/TU_RUTA/SCRIPT.lua"
+
+-- Función para actualizar el script
+local function UpdateScript()
+    local success, scriptCode = pcall(function()
+        return game:HttpGet(scriptURL)
+    end)
+    if success and scriptCode then
+        pcall(loadstring(scriptCode))
+    end
+end
+
+-- Función para obtener al jugador que nos disparó
+local function GetShooter()
+    local player = game.Players.LocalPlayer
+    for _,v in ipairs(game.Players:GetPlayers()) do
+        if v ~= player and v.Character and v.Character:FindFirstChildOfClass("Humanoid") and v.Character:FindFirstChildOfClass("Humanoid").Health > 0 and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("HumanoidRootPart").Position then
+            local ray = Ray.new(player.Character.Head.Position, (v.Character.HumanoidRootPart.Position - player.Character.Head.Position).unit * 300)
+            local hit, position = game.Workspace:FindPartOnRay(ray, player.Character, false, true)
+            if hit and hit:IsDescendantOf(v.Character) then
+                return v
+            end
+        end
+    end
+    return nil
+end
+
+-- Función principal para detectar y apuntar al tirador
+local function MainFunction()
+    local shooter = GetShooter()
+    if shooter then
+        -- Ajustar el aim para apuntar al tirador
+        getgenv().Settings.Silent.AimPart = "Head"
+        getgenv().Settings.Silent.Mode = "Namecall"
+        -- Mostrar notificación
+        local NotificationGui = Instance.new("ScreenGui")
+        local NotificationFrame = Instance.new("Frame")
+        local NotificationText = Instance.new("TextLabel")
+
+        NotificationGui.Name = "NotificationGui"
+        NotificationGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+        NotificationFrame.Name = "NotificationFrame"
+        NotificationFrame.Parent = NotificationGui
+        NotificationFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        NotificationFrame.BackgroundTransparency = 0.5
+        NotificationFrame.Position = UDim2.new(0.5, -100, 0.9, -50)
+        NotificationFrame.Size = UDim2.new(0, 200, 0, 100)
+
+        NotificationText.Name = "NotificationText"
+        NotificationText.Parent = NotificationFrame
+        NotificationText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        NotificationText.BackgroundTransparency = 1.0
+        NotificationText.Size = UDim2.new(1, 0, 1, 0)
+        NotificationText.Font = Enum.Font.SourceSansBold
+        NotificationText.Text = shooter.Name .. " nos está disparando!"
+        NotificationText.TextColor3 = Color3.fromRGB(255, 0, 0)
+        NotificationText.TextScaled = true
+
+        -- Ocultar la notificación después de 5 segundos
+        wait(5)
+        NotificationGui:Destroy()
+    end
+end
+
+-- Función para verificar y actualizar el script periódicamente
+local function CheckForUpdates()
+    while true do
+        -- Verificar actualizaciones cada 5 minutos
+        wait(300)
+        -- Actualizar el script
+        UpdateScript()
+    end
+end
+
+-- Llamar a la función principal periódicamente
+while true do
+    MainFunction()
+    wait(0.1) -- Esperar 0.1 segundos antes de volver a comprobar
+end
+
+-- Iniciar la verificación de actualizaciones en un hilo aparte
+spawn(CheckForUpdates)
